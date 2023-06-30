@@ -33,25 +33,126 @@ namespace Expressions.Task3.E3SQueryProvider
 
                 return node;
             }
+            switch (node.Method.Name)
+            {
+                case "StartsWith":
+                    VisitStartWith(node);
+                    return node;                    
+                case "EndsWith":
+                    VisitEndsWith(node);
+                    return node;
+                case "Contains":
+                    VisitEndsWith(node);
+                    return node;
+                case "Equals":
+                    VisitEquals(node);
+                    return node;
+            }
             return base.VisitMethodCall(node);
         }
-
+        protected Expression VisitStartWith(MethodCallExpression node)
+        {
+            var mainArg = node.Arguments[0];
+            var lambda = Expression.Lambda<Func<string>>(mainArg);
+            var arg = lambda.Compile()();
+            var member = node.Object as MemberExpression;
+            if (member != null)
+            {
+                _resultStringBuilder.AppendFormat("{0}:({1}*)", member.Member.Name, arg);
+            }
+            else
+            {
+                throw new NotSupportedException($"Method op not supported '{node.Method.Name}' is not supported");
+            }
+            return node;
+        }
+        protected Expression VisitEndsWith(MethodCallExpression node)
+        {
+            var mainArg = node.Arguments[0];
+            var lambda = Expression.Lambda<Func<string>>(mainArg);
+            var arg = lambda.Compile()();
+            var member = node.Object as MemberExpression;
+            if (node.Method.Name == "EndsWith")
+            {
+                _resultStringBuilder.AppendFormat($"{member.Member.Name}:(*{arg})");
+            }
+            else if (node.Method.Name == "Contains")
+            {
+                _resultStringBuilder.AppendFormat("{0}:(*{1}*)", member.Member.Name, arg);
+            }
+            else
+            {
+                _resultStringBuilder.AppendFormat("{0}:({1})", member.Member.Name, arg);
+                //throw new NotSupportedException($"Method op not supported '{node.Method.Name}' is not supported");
+            }
+            return node;
+            //return base.VisitMethodCall(node);
+        }
+        protected Expression VisitCommonMethod(MethodCallExpression node)
+        {
+            var mainArg = node.Arguments[0];
+            var lambda = Expression.Lambda<Func<string>>(mainArg);
+            var arg = lambda.Compile()();
+            var member = node.Object as MemberExpression;
+            if (member.Member.Name == "EndsWith")
+            {
+                _resultStringBuilder.AppendFormat($"{member.Member.Name}:(*{arg})");
+            }
+            else if (member.Member.Name == "Contains")
+            {
+                _resultStringBuilder.AppendFormat("{0}:(*{1}*)", member.Member.Name, arg);
+            }
+            else
+            {
+                _resultStringBuilder.AppendFormat("{0}:({1})", member.Member.Name, arg);
+                //throw new NotSupportedException($"Method op not supported '{node.Method.Name}' is not supported");
+            }
+            return node;
+            //return base.VisitMethodCall(node);
+        }
+        protected Expression VisitEquals(MethodCallExpression node)
+        {
+            var mainArg = node.Arguments[0];
+            var lambda = Expression.Lambda<Func<string>>(mainArg);
+            var arg = lambda.Compile()();
+            var member = node.Object as MemberExpression;
+            if (member != null)
+            {
+                _resultStringBuilder.AppendFormat("{0}:({1})", member.Member.Name, arg);
+            }
+            else if (member.Member.Name == "Contains")
+            {
+                _resultStringBuilder.AppendFormat("{0}:(*{1}*)", member.Member.Name, arg);
+            }
+            else
+            {
+                
+                throw new NotSupportedException($"Method op not supported '{node.Method.Name}' is not supported");
+            }
+            return node;
+            //return base.VisitMethodCall(node);
+        }
         protected override Expression VisitBinary(BinaryExpression node)
         {
             switch (node.NodeType)
             {
                 case ExpressionType.Equal:
-                    if (node.Left.NodeType != ExpressionType.MemberAccess)
-                        throw new NotSupportedException($"Left operand should be property or field: {node.NodeType}");
-
-                    if (node.Right.NodeType != ExpressionType.Constant)
-                        throw new NotSupportedException($"Right operand should be constant: {node.NodeType}");
-
-                    Visit(node.Left);
-                    _resultStringBuilder.Append("(");
-                    Visit(node.Right);
-                    _resultStringBuilder.Append(")");
-                    break;
+                    if (node.Left.NodeType != ExpressionType.MemberAccess && node.Right.NodeType != ExpressionType.Constant)
+                    {
+                        Visit(node.Right);
+                        _resultStringBuilder.Append("(");
+                        Visit(node.Left);
+                        _resultStringBuilder.Append(")");
+                        break;
+                    }
+                    else
+                    {
+                        Visit(node.Left);
+                        _resultStringBuilder.Append("(");
+                        Visit(node.Right);
+                        _resultStringBuilder.Append(")");
+                        break;
+                    }            
 
                 default:
                     throw new NotSupportedException($"Operation '{node.NodeType}' is not supported");
