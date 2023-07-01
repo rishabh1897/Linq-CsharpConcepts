@@ -36,37 +36,22 @@ namespace Expressions.Task3.E3SQueryProvider
             switch (node.Method.Name)
             {
                 case "StartsWith":
-                    VisitStartWith(node);
+                    VisitCommonMethodFormatter(node);
                     return node;                    
                 case "EndsWith":
-                    VisitEndsWith(node);
+                    VisitCommonMethodFormatter(node);
                     return node;
                 case "Contains":
-                    VisitEndsWith(node);
+                    VisitCommonMethodFormatter(node);
                     return node;
                 case "Equals":
-                    VisitEquals(node);
+                    VisitCommonMethodFormatter(node);
                     return node;
             }
             return base.VisitMethodCall(node);
         }
-        protected Expression VisitStartWith(MethodCallExpression node)
-        {
-            var mainArg = node.Arguments[0];
-            var lambda = Expression.Lambda<Func<string>>(mainArg);
-            var arg = lambda.Compile()();
-            var member = node.Object as MemberExpression;
-            if (member != null)
-            {
-                _resultStringBuilder.AppendFormat("{0}:({1}*)", member.Member.Name, arg);
-            }
-            else
-            {
-                throw new NotSupportedException($"Method op not supported '{node.Method.Name}' is not supported");
-            }
-            return node;
-        }
-        protected Expression VisitEndsWith(MethodCallExpression node)
+        
+        protected Expression VisitCommonMethodFormatter(MethodCallExpression node)
         {
             var mainArg = node.Arguments[0];
             var lambda = Expression.Lambda<Func<string>>(mainArg);
@@ -80,57 +65,19 @@ namespace Expressions.Task3.E3SQueryProvider
             {
                 _resultStringBuilder.AppendFormat("{0}:(*{1}*)", member.Member.Name, arg);
             }
-            else
+            else if (node.Method.Name == "StartsWith")
             {
-                _resultStringBuilder.AppendFormat("{0}:({1})", member.Member.Name, arg);
-                //throw new NotSupportedException($"Method op not supported '{node.Method.Name}' is not supported");
+                _resultStringBuilder.AppendFormat("{0}:({1}*)", member.Member.Name, arg);
             }
-            return node;
-            //return base.VisitMethodCall(node);
-        }
-        protected Expression VisitCommonMethod(MethodCallExpression node)
-        {
-            var mainArg = node.Arguments[0];
-            var lambda = Expression.Lambda<Func<string>>(mainArg);
-            var arg = lambda.Compile()();
-            var member = node.Object as MemberExpression;
-            if (member.Member.Name == "EndsWith")
-            {
-                _resultStringBuilder.AppendFormat($"{member.Member.Name}:(*{arg})");
-            }
-            else if (member.Member.Name == "Contains")
-            {
-                _resultStringBuilder.AppendFormat("{0}:(*{1}*)", member.Member.Name, arg);
-            }
-            else
-            {
-                _resultStringBuilder.AppendFormat("{0}:({1})", member.Member.Name, arg);
-                //throw new NotSupportedException($"Method op not supported '{node.Method.Name}' is not supported");
-            }
-            return node;
-            //return base.VisitMethodCall(node);
-        }
-        protected Expression VisitEquals(MethodCallExpression node)
-        {
-            var mainArg = node.Arguments[0];
-            var lambda = Expression.Lambda<Func<string>>(mainArg);
-            var arg = lambda.Compile()();
-            var member = node.Object as MemberExpression;
-            if (member != null)
+            else if(node.Method.Name == "Equals")
             {
                 _resultStringBuilder.AppendFormat("{0}:({1})", member.Member.Name, arg);
             }
-            else if (member.Member.Name == "Contains")
-            {
-                _resultStringBuilder.AppendFormat("{0}:(*{1}*)", member.Member.Name, arg);
-            }
             else
             {
-                
                 throw new NotSupportedException($"Method op not supported '{node.Method.Name}' is not supported");
             }
             return node;
-            //return base.VisitMethodCall(node);
         }
         protected override Expression VisitBinary(BinaryExpression node)
         {
